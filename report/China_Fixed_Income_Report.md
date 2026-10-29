@@ -28,6 +28,8 @@ Cash flows follow the scheduled contractual coupon dates without business-day ad
 
 ### 1.2 Accrued interest and full price
 
+The coupon rate determines the contractual interest payment. YTM is instead the annualized discount rate implied by the price paid and the remaining payments. A clean price excludes accrued interest; the full (dirty) price includes it and is the cash amount used in the valuation equation. All prices and payments below use the same RMB100 face-value basis.
+
 A buyer between coupon dates pays for the interest accrued since the previous coupon. Let F be face value, c the annual coupon rate, f the number of coupons per year, t elapsed days since the previous coupon, and TS the actual days in the current coupon period.
 
 $$
@@ -62,12 +64,28 @@ $$
 
 Here d is the number of days from settlement to the next coupon date. With n remaining coupon payments, the model solves for nominal annual yield y:
 
+The summation sign $\sum$ adds the present values of all remaining coupons. The final term adds principal once at maturity. Dividing annual yield $y$ by payment frequency $f$ gives the rate per coupon period; the exponent measures time in coupon periods. Thus $\alpha+i-1$ allows the first payment to be less than a full period away. Rates are decimals in calculations, so 4.11% is 0.0411.
+
 $$
 P_{full}=\sum_{i=1}^{n}\frac{Fc/f}{(1+y/f)^{\alpha+i-1}}+
 \frac{F}{(1+y/f)^{\alpha+n-1}}
 $$
 
 This coupon-period method follows the structure of formula (6) in the supplied 2007 PBOC calculation attachment, printed p.4. It is a stated modelling convention, rather than a claim to reproduce every exchange quoting or settlement convention. The formula applies to the multi-coupon schedules studied here. The attachment also contains different formulas for other payment structures.
+
+For example, 010504 has five semiannual payments remaining and $\alpha=63/181$. Its equation can be written without summation notation:
+
+$$
+\begin{aligned}
+105.987724={}&\frac{2.055}{(1+y/2)^{63/181}}
++\frac{2.055}{(1+y/2)^{63/181+1}}\\
+&+\frac{2.055}{(1+y/2)^{63/181+2}}
++\frac{2.055}{(1+y/2)^{63/181+3}}\\
+&+\frac{102.055}{(1+y/2)^{63/181+4}}
+\end{aligned}
+$$
+
+The last payment includes the RMB100 principal. Solving for $y$ gives approximately 0.0191593, or **1.916%** nominal annual YTM. This is the yield that reproduces the assumed full price, not a separate forecast of the bond's return.
 
 The workbook solves the equation by bisection between nominal yields of -10% and 100%. Each step compares the discounted cash flows with the full price and narrows the yield interval. The calculation is visible below each bond schedule and uses ordinary Excel formulas, without macros or external workbook links. Prices whose yields fall outside the bracket return `n.a.`.
 
@@ -96,6 +114,14 @@ $$
 Calculating YTM does not require assuming that actual reinvestment has already occurred. However, interpreting it as an achieved compound return to maturity requires suitable reinvestment of interim coupons, timely promised payments and holding to the relevant horizon. A change in reinvestment rates, early sale or default can produce a different realized return. Caks (1977), particularly pp.103–104, provides the conceptual basis for distinguishing YTM from realized performance and from a full term structure of spot rates.
 
 For 184575, the bond includes a third-year investor put and a coupon-reset provision. The maturity scenario holds the 2.72% coupon constant after the reset date, an assumption rather than a forecast of the later decision. The alternative put scenario assumes valid exercise and receipt of par plus the scheduled coupon on the contractual put date, 14 September 2025. Its reconstructed yield to put is **2.716%**. It is a separate contractual scenario, not a guaranteed return or a complete option-adjusted valuation.
+
+Yield to put uses the same discounting equation, but stops cash flows at the put date and replaces maturity principal with the assumed put payment. Here, three annual payments remain to the put date, $f=1$ and $\alpha=185/365$:
+
+$$
+101.341370=\frac{2.72}{(1+y_{put})^{185/365}}+\frac{2.72}{(1+y_{put})^{185/365+1}}+\frac{102.72}{(1+y_{put})^{185/365+2}}
+$$
+
+Solving gives $y_{put}\approx2.716\%$. The put-date scenario replaces the maturity scenario; its payments are not added to the maturity cash flows.
 
 The workbook also reprices the maturity cash flows at yields 100 basis points above and below the solved YTM. Higher required yields reduce the present value of the fixed promised cash flows. For the option-bearing bond, this is a fixed-cash-flow sensitivity rather than an estimate of option-adjusted duration.
 
@@ -143,7 +169,7 @@ $$
 S=\frac{\overline{r_p-r_f}}{s(r_p-r_f)}\sqrt{k}
 $$
 
-Here k is the number of observations per year. Frequency, the risk-free series, annualization and the measurement window must be identical across funds.
+Here $r_p$ is the fund's periodic total return, $r_f$ is the risk-free return for the same period, the overbar denotes the sample mean, and $s$ denotes sample standard deviation. The ratio measures average excess return per unit of variability in excess returns. $k$ is the number of observations per year, for example 12 for monthly returns. Multiplying by $\sqrt{k}$ is a conventional annualization under an assumption of uncorrelated periodic excess returns; serial correlation can make that conversion misleading. Frequency, the risk-free series, annualization and the measurement window must be identical across funds.
 
 One common Calmar-ratio convention is:
 
@@ -156,6 +182,14 @@ MDD=\min_t\left(\frac{V_t}{\max_{u\leq t}V_u}-1\right)
 $$
 
 V is a total-return wealth index including distributions. Other providers use variants, so the definition must accompany a comparison. Both Sharpe and Calmar are ratios and ordinarily are displayed without percentage signs. Zero volatility or zero drawdown requires a separate treatment rather than division by zero.
+
+For an observation window spanning $Y>0$ years, the annualized geometric total return used in this convention is:
+
+$$
+R_{annualized}=\left(\frac{V_{end}}{V_{start}}\right)^{1/Y}-1
+$$
+
+Maximum drawdown (MDD) is the largest percentage fall from an earlier peak within that same window. The formula records it as a negative number; Calmar divides annualized return by its positive magnitude. Sharpe therefore summarizes variability of excess returns, while Calmar focuses on the worst historical peak-to-trough loss. Neither formula creates a fund ranking here because the required common return series is unavailable.
 
 ### 2.3 Interpretation of the historical preference
 
@@ -172,6 +206,8 @@ The original essay attributed the following price pairs to East Money on 17 Marc
 $$
 R_{price}=\frac{P_1}{P_0}-1
 $$
+
+Here $P_0$ and $P_1$ are the earlier and later prices. For example, $67.999/33.000-1=1.060576$, displayed as **106.06%**. The decimal return is multiplied by 100 only when it is displayed as a percentage.
 
 | Bond | Code | Earlier price | Later price | Price change |
 | --- | --- | ---: | ---: | ---: |
@@ -258,6 +294,7 @@ The reconstructed workbook provides transparent coupon schedules, editable price
 - Nanjing Anju Construction Group. [2025 Interest-Payment Notice, code 184575](https://static.sse.com.cn/disclosure/bond/announcement/corporate/c/new/2025-09-06/184575_20250906_ZBYV.pdf). Used for retrospective contract description, not as a March 2023 observation.
 - People's Bank of China. *Notice on Improving the Standards for Calculating Bond Yield to Maturity in the National Interbank Bond Market*, Yinfa [2007] No.200. Supplied attachment: *Comparison of Adjusted Bond Yield-to-Maturity Calculation Standards*, printed pp.3–4. Cited as historical methodology.
 - Caks, J. (1977). “The Coupon Effect on Yield to Maturity.” *The Journal of Finance*, 32(1), 103–115. [JSTOR record](https://www.jstor.org/stable/2326906).
+- Sharpe, W. F. (1994). [The Sharpe Ratio](https://web.stanford.edu/~wfsharpe/art/sr/SR.htm). *The Journal of Portfolio Management*, Fall 1994. Definitions of differential-return mean and variability, and assumptions behind time scaling.
 - Sino-Ocean Capital Limited. [2020 Offering Document](https://static.sse.com.cn/disclosure/bond/announcement/company/c/2020-09-04/3966102353075930292755427.pdf).
 - Sino-Ocean Capital Limited. [2022 Bond Annual Report](https://static.sse.com.cn/disclosure/bond/announcement/company/c/new/2023-05-31/175670_20230531_A06X.pdf), published May 2023.
 
